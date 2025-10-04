@@ -1,0 +1,74 @@
+[
+  {
+    "lat": 28.6139,
+    "lon": 77.209,
+    "date": "2025-10-05",
+    "rainProbability": 75,
+    "precipitation": 12.5,
+    "tempHigh": 32,
+    "tempLow": 24,
+    "humidity": 78,
+    "soilMoisture": 65,
+    "windSpeed": 8
+  },
+  {
+    "lat": 28.6139,
+    "lon": 77.209,
+    "date": "2025-10-06",
+    "rainProbability": 45,
+    "precipitation": 5.2,
+    "tempHigh": 30,
+    "tempLow": 23,
+    "humidity": 70,
+    "soilMoisture": 58,
+    "windSpeed": 6
+  },
+  {
+    "lat": 28.6139,
+    "lon": 77.209,
+    "date": "2025-10-07",
+    "rainProbability": 20,
+    "precipitation": 1.5,
+    "tempHigh": 31,
+    "tempLow": 22,
+    "humidity": 55,
+    "soilMoisture": 45,
+    "windSpeed": 7
+  },
+  {
+    "lat": 19.076,
+    "lon": 72.8777,
+    "date": "2025-10-05",
+    "rainProbability": 85,
+    "precipitation": 18.3,
+    "tempHigh": 29,
+    "tempLow": 25,
+    "humidity": 82,
+    "soilMoisture": 75,
+    "windSpeed": 12
+  },
+  {
+    "lat": 19.076,
+    "lon": 72.8777,
+    "date": "2025-10-06",
+    "rainProbability": 60,
+    "precipitation": 8.7,
+    "tempHigh": 28,
+    "tempLow": 24,
+    "humidity": 75,
+    "soilMoisture": 68,
+    "windSpeed": 10
+  },
+  {
+    "lat": 13.0827,
+    "lon": 80.2707,
+    "date": "2025-10-05",
+    "rainProbability": 35,
+    "precipitation": 3.2,
+    "tempHigh": 33,
+    "tempLow": 26,
+    "humidity": 68,
+    "soilMoisture": 52,
+    "windSpeed": 9
+  }
+]

@@ -1,305 +1,202 @@
-import { useState, useCallback, useRef } from "react";
-import { GoogleMap, useJsApiLoader, Marker, DrawingManager, Polygon, Circle } from "@react-google-maps/api";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Card, CardContent } from "@/components/ui/card";
-import { MapPin, Info, Loader2, Trash2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useEffect, useRef, useState } from "react";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import "leaflet-draw/dist/leaflet.draw.css";
+import "leaflet-draw";
+import "leaflet-geometryutil";
+import { Card } from "@/components/ui/card";
 
 interface MapComponentProps {
-  searchedLocation: string;
+  center: [number, number];
+  zoom: number;
+  onAreaSelected?: (area: number, bounds: any) => void;
+  rainProbability?: number;
 }
 
-const libraries: ("drawing" | "places")[] = ["drawing", "places"];
+const MapComponent = ({ center, zoom, onAreaSelected, rainProbability = 0 }: MapComponentProps) => {
+  const mapContainer = useRef<HTMLDivElement>(null);
+  const map = useRef<L.Map | null>(null);
+  const drawnItems = useRef<L.FeatureGroup>(new L.FeatureGroup());
+  const [selectedArea, setSelectedArea] = useState<number>(0);
 
-const MapComponent = ({ searchedLocation }: MapComponentProps) => {
-  const [googleMapsApiKey, setGoogleMapsApiKey] = useState("");
-  const [showApiInput, setShowApiInput] = useState(true);
-  const [mapCenter, setMapCenter] = useState({ lat: 20.5937, lng: 78.9629 }); // India center
-  const [markerPosition, setMarkerPosition] = useState<google.maps.LatLngLiteral | null>(null);
-  const [drawnShapes, setDrawnShapes] = useState<Array<{ type: string; shape: any; area: number }>>([]);
-  const mapRef = useRef<google.maps.Map | null>(null);
-  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
-  const { toast } = useToast();
-
-  const { isLoaded, loadError } = useJsApiLoader({
-    id: "google-map-script",
-    googleMapsApiKey: googleMapsApiKey,
-    libraries: libraries,
-  });
-
-  const onMapLoad = useCallback((map: google.maps.Map) => {
-    mapRef.current = map;
-  }, []);
-
-  const handlePlaceSearch = useCallback(() => {
-    if (!searchedLocation || !mapRef.current) return;
-
-    const geocoder = new google.maps.Geocoder();
-    geocoder.geocode({ address: searchedLocation }, (results, status) => {
-      if (status === "OK" && results && results[0]) {
-        const location = results[0].geometry.location;
-        const newCenter = { lat: location.lat(), lng: location.lng() };
-        setMapCenter(newCenter);
-        setMarkerPosition(newCenter);
-        mapRef.current?.setCenter(newCenter);
-        mapRef.current?.setZoom(14);
-        
-        toast({
-          title: "Location Found",
-          description: `Centered map on ${searchedLocation}`,
-        });
-      } else {
-        toast({
-          title: "Location Not Found",
-          description: "Please try a different search term",
-          variant: "destructive",
-        });
-      }
-    });
-  }, [searchedLocation, toast]);
-
-  const onPolygonComplete = useCallback((polygon: google.maps.Polygon) => {
-    const path = polygon.getPath();
-    const area = google.maps.geometry.spherical.computeArea(path);
-    const areaInHectares = (area / 10000).toFixed(2);
-    
-    setDrawnShapes((prev) => [
-      ...prev,
-      { type: "polygon", shape: polygon, area: parseFloat(areaInHectares) },
-    ]);
-
-    toast({
-      title: "Area Selected",
-      description: `Polygon area: ${areaInHectares} hectares`,
-    });
-  }, [toast]);
-
-  const onCircleComplete = useCallback((circle: google.maps.Circle) => {
-    const radius = circle.getRadius();
-    const area = Math.PI * radius * radius;
-    const areaInHectares = (area / 10000).toFixed(2);
-    
-    setDrawnShapes((prev) => [
-      ...prev,
-      { type: "circle", shape: circle, area: parseFloat(areaInHectares) },
-    ]);
-
-    toast({
-      title: "Area Selected",
-      description: `Circle area: ${areaInHectares} hectares`,
-    });
-  }, [toast]);
-
-  const clearAllShapes = useCallback(() => {
-    drawnShapes.forEach(({ shape }) => {
-      shape.setMap(null);
-    });
-    setDrawnShapes([]);
-    toast({
-      title: "Cleared",
-      description: "All drawn shapes have been removed",
-    });
-  }, [drawnShapes, toast]);
-
-  const handleApiKeySubmit = () => {
-    if (googleMapsApiKey.trim()) {
-      setShowApiInput(false);
-      toast({
-        title: "API Key Added",
-        description: "Loading Google Maps...",
-      });
-    } else {
-      toast({
-        title: "API Key Required",
-        description: "Please enter a valid Google Maps API key",
-        variant: "destructive",
-      });
-    }
+  const getRainColor = (probability: number): string => {
+    if (probability >= 70) return "#1e3a8a"; // Dark Blue
+    if (probability >= 50) return "#3b82f6"; // Light Blue
+    if (probability >= 30) return "#eab308"; // Yellow
+    if (probability >= 15) return "#f97316"; // Orange
+    return "#fca5a5"; // Light Red
   };
 
-  // Search for location when searchedLocation changes
-  useState(() => {
-    if (searchedLocation && isLoaded && !showApiInput) {
-      handlePlaceSearch();
+  useEffect(() => {
+    if (!mapContainer.current || map.current) return;
+
+    // Initialize map
+    map.current = L.map(mapContainer.current).setView(center, zoom);
+
+    // Add OpenStreetMap tiles
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '© OpenStreetMap contributors',
+      maxZoom: 19,
+    }).addTo(map.current);
+
+    // Add drawn items layer
+    map.current.addLayer(drawnItems.current);
+
+    // Initialize draw control
+    const drawControl = new L.Control.Draw({
+      edit: {
+        featureGroup: drawnItems.current,
+      },
+      draw: {
+        polygon: {
+          allowIntersection: false,
+          shapeOptions: {
+            color: "#22c55e",
+            fillOpacity: 0.4,
+          },
+        },
+        circle: {
+          shapeOptions: {
+            color: "#22c55e",
+            fillOpacity: 0.4,
+          },
+        },
+        rectangle: {
+          shapeOptions: {
+            color: "#22c55e",
+            fillOpacity: 0.4,
+          },
+        },
+        polyline: false,
+        marker: false,
+        circlemarker: false,
+      },
+    });
+
+    map.current.addControl(drawControl);
+
+    // Handle draw created event
+    map.current.on(L.Draw.Event.CREATED, (e: any) => {
+      const layer = e.layer;
+      drawnItems.current.addLayer(layer);
+      
+      // Calculate area
+      let area = 0;
+      if (layer instanceof L.Circle) {
+        const radius = layer.getRadius();
+        area = (Math.PI * radius * radius) / 10000; // Convert to hectares
+      } else if (layer instanceof L.Polygon || layer instanceof L.Rectangle) {
+        area = L.GeometryUtil.geodesicArea(layer.getLatLngs()[0]) / 10000;
+      }
+      
+      setSelectedArea(area);
+      if (onAreaSelected) {
+        onAreaSelected(area, layer.getBounds());
+      }
+    });
+
+    // Handle draw edited event
+    map.current.on(L.Draw.Event.EDITED, (e: any) => {
+      e.layers.eachLayer((layer: any) => {
+        let area = 0;
+        if (layer instanceof L.Circle) {
+          const radius = layer.getRadius();
+          area = (Math.PI * radius * radius) / 10000;
+        } else if (layer instanceof L.Polygon || layer instanceof L.Rectangle) {
+          area = L.GeometryUtil.geodesicArea(layer.getLatLngs()[0]) / 10000;
+        }
+        
+        setSelectedArea(area);
+        if (onAreaSelected) {
+          onAreaSelected(area, layer.getBounds());
+        }
+      });
+    });
+
+    // Handle draw deleted event
+    map.current.on(L.Draw.Event.DELETED, () => {
+      setSelectedArea(0);
+      if (onAreaSelected) {
+        onAreaSelected(0, new L.LatLngBounds([0, 0], [0, 0]));
+      }
+    });
+
+    return () => {
+      if (map.current) {
+        map.current.remove();
+        map.current = null;
+      }
+    };
+  }, []);
+
+  // Update map center when prop changes
+  useEffect(() => {
+    if (map.current) {
+      map.current.setView(center, zoom);
+      
+      // Add marker at searched location
+      L.marker(center).addTo(map.current);
     }
-  });
+  }, [center, zoom]);
 
-  if (showApiInput) {
-    return (
-      <div className="space-y-4">
-        <Alert className="bg-info/10 border-info">
-          <Info className="h-4 w-4 text-info" />
-          <AlertDescription className="text-sm space-y-2">
-            <p>
-              <strong>Google Maps Integration:</strong> To enable the interactive map with area selection tools, you'll need a free Google Maps API key.
-            </p>
-            <div className="space-y-1 text-xs">
-              <p><strong>How to get your free API key:</strong></p>
-              <ol className="list-decimal list-inside space-y-1 ml-2">
-                <li>Visit <a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer" className="underline text-info hover:text-info/80">Google Cloud Console</a></li>
-                <li>Create a new project or select an existing one</li>
-                <li>Enable the following APIs: Maps JavaScript API, Places API, Geocoding API</li>
-                <li>Go to Credentials and create an API key</li>
-                <li>Copy the API key and paste it below</li>
-              </ol>
-              <p className="mt-2 text-muted-foreground">
-                💡 Google provides $200 free credits per month, which is more than enough for personal use.
-              </p>
-            </div>
-          </AlertDescription>
-        </Alert>
-
-        <Card className="shadow-soft">
-          <CardContent className="pt-6">
-            <div className="space-y-3">
-              <div className="flex gap-2">
-                <Input
-                  type="text"
-                  placeholder="Paste your Google Maps API key here"
-                  value={googleMapsApiKey}
-                  onChange={(e) => setGoogleMapsApiKey(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleApiKeySubmit()}
-                />
-                <Button
-                  onClick={handleApiKeySubmit}
-                  disabled={!googleMapsApiKey.trim()}
-                >
-                  Load Map
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                🔒 Your API key is only stored in your browser session and never sent to our servers.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (loadError) {
-    return (
-      <Alert variant="destructive">
-        <AlertDescription>
-          Failed to load Google Maps. Please check your API key and ensure the required APIs are enabled.
-          <Button
-            variant="outline"
-            size="sm"
-            className="mt-2"
-            onClick={() => setShowApiInput(true)}
-          >
-            Change API Key
-          </Button>
-        </AlertDescription>
-      </Alert>
-    );
-  }
-
-  if (!isLoaded) {
-    return (
-      <div className="flex items-center justify-center h-96 bg-muted/30 rounded-lg">
-        <div className="text-center space-y-3">
-          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-          <p className="text-muted-foreground">Loading Google Maps...</p>
-        </div>
-      </div>
-    );
-  }
-
-  const totalArea = drawnShapes.reduce((sum, { area }) => sum + area, 0).toFixed(2);
+  // Update polygon colors based on rain probability
+  useEffect(() => {
+    if (rainProbability > 0 && drawnItems.current) {
+      const color = getRainColor(rainProbability);
+      
+      drawnItems.current.eachLayer((layer: any) => {
+        if (layer.setStyle) {
+          layer.setStyle({
+            color: "#ffffff",
+            fillColor: color,
+            fillOpacity: 0.5,
+            weight: 2,
+          });
+        }
+      });
+    }
+  }, [rainProbability]);
 
   return (
-    <div className="space-y-4">
-      <Alert className="bg-success/10 border-success">
-        <MapPin className="h-4 w-4 text-success" />
-        <AlertDescription className="text-sm">
-          <strong>Map Tools Active:</strong> Use the drawing tools on the map to select your farming area. 
-          Draw polygons for irregular shapes or circles for round areas.
-          {drawnShapes.length > 0 && (
-            <div className="mt-2 font-semibold">
-              Total selected area: {totalArea} hectares ({(parseFloat(totalArea) * 2.47105).toFixed(2)} acres)
-            </div>
-          )}
-        </AlertDescription>
-      </Alert>
+    <div className="relative w-full h-full">
+      <div ref={mapContainer} className="absolute inset-0 rounded-lg shadow-lg z-0" />
+      
+      {/* Color Legend */}
+      <Card className="absolute bottom-4 right-4 p-4 bg-card/95 backdrop-blur-sm border-border z-10 shadow-lg">
+        <h3 className="text-sm font-semibold mb-2 text-foreground">Rain Probability</h3>
+        <div className="space-y-1 text-xs">
+          <div className="flex items-center space-x-2">
+            <div className="w-4 h-4 rounded" style={{ backgroundColor: "#1e3a8a" }} />
+            <span className="text-muted-foreground">70-100%</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-4 h-4 rounded" style={{ backgroundColor: "#3b82f6" }} />
+            <span className="text-muted-foreground">50-69%</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-4 h-4 rounded" style={{ backgroundColor: "#eab308" }} />
+            <span className="text-muted-foreground">30-49%</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-4 h-4 rounded" style={{ backgroundColor: "#f97316" }} />
+            <span className="text-muted-foreground">15-29%</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-4 h-4 rounded" style={{ backgroundColor: "#fca5a5" }} />
+            <span className="text-muted-foreground">0-14%</span>
+          </div>
+        </div>
+      </Card>
 
-      <div className="relative rounded-lg overflow-hidden border border-border shadow-medium">
-        <GoogleMap
-          mapContainerStyle={{ width: "100%", height: "500px" }}
-          center={mapCenter}
-          zoom={10}
-          onLoad={onMapLoad}
-          options={{
-            mapTypeControl: true,
-            streetViewControl: false,
-            fullscreenControl: true,
-          }}
-        >
-          {markerPosition && <Marker position={markerPosition} />}
-          
-          <DrawingManager
-            onPolygonComplete={onPolygonComplete}
-            onCircleComplete={onCircleComplete}
-            options={{
-              drawingControl: true,
-              drawingControlOptions: {
-                position: google.maps.ControlPosition.TOP_CENTER,
-                drawingModes: [
-                  google.maps.drawing.OverlayType.POLYGON,
-                  google.maps.drawing.OverlayType.CIRCLE,
-                ],
-              },
-              polygonOptions: {
-                fillColor: "hsl(140, 70%, 35%)",
-                fillOpacity: 0.3,
-                strokeWeight: 2,
-                strokeColor: "hsl(140, 70%, 35%)",
-                editable: true,
-                draggable: true,
-              },
-              circleOptions: {
-                fillColor: "hsl(200, 70%, 50%)",
-                fillOpacity: 0.3,
-                strokeWeight: 2,
-                strokeColor: "hsl(200, 70%, 50%)",
-                editable: true,
-                draggable: true,
-              },
-            }}
-          />
-        </GoogleMap>
-      </div>
-
-      <div className="flex gap-2 items-center">
-        {drawnShapes.length > 0 && (
-          <Button variant="outline" onClick={clearAllShapes} className="gap-2">
-            <Trash2 className="h-4 w-4" />
-            Clear All Shapes
-          </Button>
-        )}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            setShowApiInput(true);
-            setDrawnShapes([]);
-          }}
-        >
-          Change API Key
-        </Button>
-      </div>
-
-      <div className="text-xs text-muted-foreground space-y-1">
-        <p><strong>Map Features:</strong></p>
-        <ul className="list-disc list-inside space-y-1 ml-2">
-          <li>🗺️ <strong>Drawing Tools:</strong> Use the toolbar to draw polygons (irregular shapes) or circles</li>
-          <li>✏️ <strong>Edit Shapes:</strong> Click on any drawn shape to edit, resize, or move it</li>
-          <li>📏 <strong>Area Calculation:</strong> Area is automatically calculated in hectares and acres</li>
-          <li>📍 <strong>Search:</strong> Use the location search above to find and center on specific locations</li>
-        </ul>
-      </div>
+      {/* Area Display */}
+      {selectedArea > 0 && (
+        <Card className="absolute top-4 right-4 p-3 bg-card/95 backdrop-blur-sm border-border z-10 shadow-lg">
+          <p className="text-sm text-muted-foreground">Selected Area</p>
+          <p className="text-lg font-semibold text-foreground">
+            {selectedArea.toFixed(2)} ha
+          </p>
+        </Card>
+      )}
     </div>
   );
 };

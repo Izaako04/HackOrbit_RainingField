@@ -8,96 +8,102 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Agricultural-themed color system */
-    --background: 45 20% 96%;
-    --foreground: 140 60% 15%;
+    --background: 42 25% 97%;
+    --foreground: 140 35% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 140 60% 15%;
+    --card-foreground: 140 35% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 140 60% 15%;
+    --popover-foreground: 140 35% 15%;
 
-    /* Deep agricultural green */
-    --primary: 140 70% 35%;
-    --primary-foreground: 0 0% 98%;
+    --primary: 142 76% 36%;
+    --primary-foreground: 0 0% 100%;
 
-    /* Earthy brown */
-    --secondary: 30 50% 45%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 200 80% 45%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 45 20% 90%;
-    --muted-foreground: 140 30% 40%;
+    --muted: 42 20% 92%;
+    --muted-foreground: 140 15% 45%;
 
-    /* Sky blue accent for water/rain */
-    --accent: 200 70% 50%;
-    --accent-foreground: 0 0% 98%;
+    --accent: 28 65% 50%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 140 20% 85%;
-    --input: 140 20% 90%;
-    --ring: 140 70% 35%;
+    --border: 42 15% 88%;
+    --input: 42 15% 88%;
+    --ring: 142 76% 36%;
 
     --radius: 0.75rem;
 
-    /* Success and warning colors for data indicators */
-    --success: 140 70% 45%;
-    --success-foreground: 0 0% 98%;
-    --warning: 40 95% 50%;
-    --warning-foreground: 0 0% 10%;
-    --info: 200 70% 50%;
-    --info-foreground: 0 0% 98%;
+    /* Rain probability colors */
+    --rain-high: 220 80% 35%;
+    --rain-medium-high: 200 70% 55%;
+    --rain-medium: 48 95% 60%;
+    --rain-low: 25 90% 60%;
+    --rain-very-low: 10 80% 70%;
 
-    /* Custom gradients */
-    --gradient-hero: linear-gradient(135deg, hsl(140 70% 35%) 0%, hsl(140 60% 45%) 50%, hsl(200 70% 50%) 100%);
-    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(45 20% 98%) 100%);
+    /* Gradients */
+    --gradient-hero: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 70% 45%));
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%), hsl(42 25% 98%));
     
     /* Shadows */
-    --shadow-soft: 0 2px 8px hsl(140 30% 20% / 0.08);
-    --shadow-medium: 0 4px 16px hsl(140 30% 20% / 0.12);
-    --shadow-strong: 0 8px 24px hsl(140 30% 20% / 0.16);
+    --shadow-sm: 0 2px 8px hsl(140 35% 15% / 0.06);
+    --shadow-md: 0 4px 16px hsl(140 35% 15% / 0.1);
+    --shadow-lg: 0 8px 32px hsl(140 35% 15% / 0.15);
 
     /* Transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
   .dark {
     --background: 140 30% 8%;
-    --foreground: 140 20% 95%;
+    --foreground: 42 25% 95%;
 
-    --card: 140 25% 10%;
-    --card-foreground: 140 20% 95%;
+    --card: 140 25% 12%;
+    --card-foreground: 42 25% 95%;
 
-    --popover: 140 25% 10%;
-    --popover-foreground: 140 20% 95%;
+    --popover: 140 25% 12%;
+    --popover-foreground: 42 25% 95%;
 
-    --primary: 140 60% 55%;
-    --primary-foreground: 140 30% 8%;
+    --primary: 142 76% 45%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 30 40% 35%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 200 70% 50%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 140 20% 15%;
-    --muted-foreground: 140 15% 65%;
+    --muted: 140 20% 18%;
+    --muted-foreground: 42 15% 65%;
 
-    --accent: 200 60% 45%;
-    --accent-foreground: 0 0% 98%;
+    --accent: 28 65% 55%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 50%;
+    --destructive-foreground: 0 0% 100%;
 
     --border: 140 20% 20%;
-    --input: 140 20% 15%;
-    --ring: 140 60% 55%;
+    --input: 140 20% 20%;
+    --ring: 142 76% 45%;
 
-    --success: 140 60% 50%;
-    --success-foreground: 140 30% 8%;
-    --warning: 40 85% 45%;
-    --warning-foreground: 0 0% 10%;
-    --info: 200 60% 45%;
-    --info-foreground: 0 0% 98%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 }
 
